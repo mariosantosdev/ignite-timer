@@ -1,5 +1,7 @@
 import { Play } from "phosphor-react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   CountdownContainer,
   FormContainer,
@@ -15,8 +17,19 @@ type FormCountdown = {
   minutesAmount: number;
 };
 
+const countdownValidationSchema = z.object({
+  task: z.string().min(1, "O nome do projeto é obrigatório"),
+  minutesAmount: z
+    .number()
+    .min(5, "O tempo mínimo é de 5 minutos")
+    .max(60, "O tempo máximo é de 60 minutos")
+    .int("O tempo deve ser um número inteiro"),
+});
+
 export function Home() {
-  const { register, handleSubmit, watch } = useForm<FormCountdown>();
+  const { register, handleSubmit, watch } = useForm<FormCountdown>({
+    resolver: zodResolver(countdownValidationSchema),
+  });
 
   const submitCountdown: SubmitHandler<FormCountdown> = () => {};
 
@@ -47,7 +60,7 @@ export function Home() {
             id="minutesAmount"
             placeholder="00"
             step={5}
-            min={1}
+            min={5}
             max={60}
             {...register("minutesAmount", { valueAsNumber: true })}
           />
