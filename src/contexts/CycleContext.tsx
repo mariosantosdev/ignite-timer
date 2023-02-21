@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from "react";
 import { differenceInSeconds } from "date-fns";
 
 interface Cycle {
@@ -26,9 +32,62 @@ interface CyclesProviderProps {
   children: React.ReactNode;
 }
 
+type CycleState = {
+  cycles: Cycle[];
+  currentCycleId: string | null;
+};
+
 export function CyclesProvider({ children }: CyclesProviderProps) {
-  const [cycles, setCycles] = useState<Cycle[]>([]);
-  const [currentCycleId, setCurrentCycleId] = useState<string | null>(null);
+  const [cyclesState, dispatchCycles] = useReducer(
+    (state: CycleState, action: any) => {
+      switch (action.type) {
+        case "CREATE_CYCLE":
+          return {
+            ...state,
+            cycles: [...state.cycles, action.payload],
+            currentCycleId: action.payload.id,
+          };
+
+        case "INTERRUPT_CYCLE":
+          return {
+            ...state,
+            cycles: state.cycles.map((cycle) => {
+              if (cycle.id === action.payload) {
+                return { ...cycle, interrupedAt: new Date() };
+              } else {
+                return cycle;
+              }
+            }),
+            currentCycleId: null,
+          };
+
+        case "FINISH_CYCLE":
+          return {
+            ...state,
+            cycles: state.cycles.map((cycle) => {
+              if (cycle.id === action.payload) {
+                return { ...cycle, finishedAt: new Date() };
+              } else {
+                return cycle;
+              }
+            }),
+            currentCycleId: null,
+          };
+
+        case "SET_CURRENT_CYCLE_ID":
+          return {
+            ...state,
+            currentCycleId: action.payload,
+          };
+
+        default:
+          return state;
+      }
+    },
+    { cycles: [], currentCycleId: null }
+  );
+
+  const { cycles, currentCycleId } = cyclesState;
   const [ammountSecondsPassed, setAmmountSecondsPassed] = useState(0);
 
   const activeCycle = cycles.find((cycle) => cycle.id === currentCycleId);
@@ -52,16 +111,6 @@ export function CyclesProvider({ children }: CyclesProviderProps) {
         );
 
         if (secondsDiff >= totalSeconds) {
-          setCycles((prev) =>
-            prev.map((cycle) => {
-              if (cycle.id === currentCycleId) {
-                return { ...cycle, interrupedAt: new Date() };
-              } else {
-                return cycle;
-              }
-            })
-          );
-
           setAmmountSecondsPassed(totalSeconds);
           handleFinishCycle();
           clearInterval(interval);
@@ -85,37 +134,16 @@ export function CyclesProvider({ children }: CyclesProviderProps) {
   }, [minutes, seconds, activeCycle]);
 
   const handleCreateCycle = (cycle: Cycle) => {
-    setCycles((prev) => [...prev, cycle]);
-    setCurrentCycleId(cycle.id);
+    dispatchCycles({ type: "CREATE_CYCLE", payload: cycle });
     setAmmountSecondsPassed(0);
   };
 
   const handleInterrumptCycle = () => {
-    setCycles((prev) =>
-      prev.map((cycle) => {
-        if (cycle.id === currentCycleId) {
-          return { ...cycle, interrupedAt: new Date() };
-        } else {
-          return cycle;
-        }
-      })
-    );
-
-    setCurrentCycleId(null);
+    dispatchCycles({ type: "INTERRUPT_CYCLE", payload: currentCycleId });
   };
 
   const handleFinishCycle = () => {
-    setCycles((prev) =>
-      prev.map((cycle) => {
-        if (cycle.id === currentCycleId) {
-          return { ...cycle, finishedAt: new Date() };
-        } else {
-          return cycle;
-        }
-      })
-    );
-
-    setCurrentCycleId(null);
+    dispatchCycles({ type: "FINISH_CYCLE", payload: currentCycleId });
   };
 
   return (
