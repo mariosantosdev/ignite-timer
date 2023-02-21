@@ -24,13 +24,22 @@ const countdownValidationSchema = z.object({
 type FormCountdown = z.infer<typeof countdownValidationSchema>;
 
 export function Home() {
-  const { register, handleSubmit, watch } = useForm<FormCountdown>({
+  const { register, handleSubmit, watch, reset } = useForm<FormCountdown>({
     resolver: zodResolver(countdownValidationSchema),
+    defaultValues: {
+      task: "",
+      minutesAmount: 0,
+    },
   });
 
-  const submitCountdown: SubmitHandler<FormCountdown> = () => {};
+  const submitCountdown: SubmitHandler<FormCountdown> = ({
+    task,
+    minutesAmount,
+  }) => {
+    reset();
+  };
 
-  const isDisabledSubmitButton = !watch("task") || !watch("minutesAmount");
+  const isDisabledSubmitButton = !watch("task");
 
   return (
     <HomeContainer>
