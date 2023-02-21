@@ -1,3 +1,5 @@
+import { produce } from "immer";
+
 import { CycleActionTypes } from "./actions";
 
 export interface Cycle {
@@ -17,37 +19,32 @@ type CycleState = {
 export const CyclesReducer = (state: CycleState, action: any) => {
   switch (action.type) {
     case CycleActionTypes["CREATE_CYCLE"]:
-      return {
-        ...state,
-        cycles: [...state.cycles, action.payload],
-        currentCycleId: action.payload.id,
-      };
+      return produce(state, (draft) => {
+        draft.cycles.push(action.payload);
+        draft.currentCycleId = action.payload.id;
+      });
 
     case CycleActionTypes["INTERRUPT_CYCLE"]:
-      return {
-        ...state,
-        cycles: state.cycles.map((cycle) => {
-          if (cycle.id === action.payload) {
-            return { ...cycle, interrupedAt: new Date() };
-          } else {
-            return cycle;
-          }
-        }),
-        currentCycleId: null,
-      };
+      return produce(state, (draft) => {
+        const currentCycleIndex = draft.cycles.findIndex(
+          (cycle) => cycle.id === action.payload
+        );
+        if (currentCycleIndex < 0) return;
+
+        draft.cycles[currentCycleIndex].interrupedAt = new Date();
+        draft.currentCycleId = null;
+      });
 
     case CycleActionTypes["FINISH_CYCLE"]:
-      return {
-        ...state,
-        cycles: state.cycles.map((cycle) => {
-          if (cycle.id === action.payload) {
-            return { ...cycle, finishedAt: new Date() };
-          } else {
-            return cycle;
-          }
-        }),
-        currentCycleId: null,
-      };
+      return produce(state, (draft) => {
+        const currentCycleIndex = draft.cycles.findIndex(
+          (cycle) => cycle.id === action.payload
+        );
+        if (currentCycleIndex < 0) return;
+
+        draft.cycles[currentCycleIndex].finishedAt = new Date();
+        draft.currentCycleId = null;
+      });
 
     case CycleActionTypes["SET_CURRENT_CYCLE_ID"]:
       return {
