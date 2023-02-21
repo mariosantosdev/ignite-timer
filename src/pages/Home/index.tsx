@@ -12,11 +12,6 @@ import {
   TaskInput,
 } from "./styles";
 
-type FormCountdown = {
-  task: string;
-  minutesAmount: number;
-};
-
 const countdownValidationSchema = z.object({
   task: z.string().min(1, "O nome do projeto é obrigatório"),
   minutesAmount: z
@@ -25,6 +20,8 @@ const countdownValidationSchema = z.object({
     .max(60, "O tempo máximo é de 60 minutos")
     .int("O tempo deve ser um número inteiro"),
 });
+
+type FormCountdown = z.infer<typeof countdownValidationSchema>;
 
 export function Home() {
   const { register, handleSubmit, watch } = useForm<FormCountdown>({
