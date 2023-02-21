@@ -63,6 +63,7 @@ export function CyclesProvider({ children }: CyclesProviderProps) {
           );
 
           setAmmountSecondsPassed(totalSeconds);
+          handleFinishCycle();
           clearInterval(interval);
         } else {
           setAmmountSecondsPassed(secondsDiff);
@@ -78,6 +79,8 @@ export function CyclesProvider({ children }: CyclesProviderProps) {
   useEffect(() => {
     if (activeCycle) {
       document.title = `${minutes}:${seconds} - Ignite Timer`;
+    } else {
+      document.title = `Ignite Timer`;
     }
   }, [minutes, seconds, activeCycle]);
 
