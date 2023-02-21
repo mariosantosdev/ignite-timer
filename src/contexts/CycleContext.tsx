@@ -6,10 +6,10 @@ import {
   useState,
 } from "react";
 import { differenceInSeconds } from "date-fns";
+import superjson from "superjson";
 import { Cycle, CyclesReducer } from "../reducers/cycles/reducer";
 import {
   addCycleAction,
-  CycleActionTypes,
   finishCycleAction,
   interruptCycleAction,
 } from "../reducers/cycles/actions";
@@ -31,15 +31,29 @@ interface CyclesProviderProps {
 }
 
 export function CyclesProvider({ children }: CyclesProviderProps) {
-  const [cyclesState, dispatchCycles] = useReducer(CyclesReducer, {
-    cycles: [],
-    currentCycleId: null,
-  });
+  const [cyclesState, dispatchCycles] = useReducer(
+    CyclesReducer,
+    { cycles: [], currentCycleId: null },
+    (initialState) => {
+      const storageStateAsJSON = localStorage.getItem(
+        "@igniteTimer:cycles-state_1.0.0"
+      );
+
+      if (storageStateAsJSON) {
+        return superjson.parse<typeof initialState>(storageStateAsJSON);
+      } else {
+        return initialState;
+      }
+    }
+  );
 
   const { cycles, currentCycleId } = cyclesState;
-  const [ammountSecondsPassed, setAmmountSecondsPassed] = useState(0);
-
   const activeCycle = cycles.find((cycle) => cycle.id === currentCycleId);
+
+  const [ammountSecondsPassed, setAmmountSecondsPassed] = useState(() => {
+    if (!activeCycle) return 0;
+    return differenceInSeconds(new Date(), new Date(activeCycle.startedAt));
+  });
 
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
   const currentSeconts = activeCycle ? totalSeconds - ammountSecondsPassed : 0;
@@ -49,6 +63,12 @@ export function CyclesProvider({ children }: CyclesProviderProps) {
 
   const minutes = String(minutesAmount).padStart(2, "0");
   const seconds = String(secondsAmount).padStart(2, "0");
+
+  useEffect(() => {
+    const stateJSON = superjson.stringify(cyclesState);
+
+    localStorage.setItem("@igniteTimer:cycles-state_1.0.0", stateJSON);
+  }, [cyclesState]);
 
   useEffect(() => {
     let interval: number;
